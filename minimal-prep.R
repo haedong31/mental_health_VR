@@ -35,9 +35,9 @@ text_prep <- function(x) {
     
     u <- u %>% 
       str_trim(side = 'both') %>% # trim whitespace from start and end
-      str_replace_all('[.?!]$', '') %>% # remove punctuation at end of sentence
+      # str_replace_all('[.?!]$', '') %>% # remove punctuation at end of sentence
       str_replace_all('[[:space:]]+', ' ') %>%  # normalize whitespace
-      str_to_lower() %>% # lowercase
+      # str_to_lower() %>% # lowercase
       str_trim(side = 'both') # trim whitespace from start and end
     
     # remove parentheses enclosing characters
@@ -59,11 +59,11 @@ text_prep <- function(x) {
 
 write_sen_list <- function(x, type) {
   if (type == 'control') {
-    base_dir <- './data/cookie_after_prep/control'
+    base_dir <- './data/cookie_minimal_prep/control'
     dir.create(base_dir, showWarnings = FALSE, recursive = TRUE)
     f <- names(x)
   } else if (type == 'experimental') {
-    base_dir <- './data/cookie_after_prep/dementia'
+    base_dir <- './data/cookie_minimal_prep/dementia'
     dir.create(base_dir, showWarnings = FALSE, recursive = TRUE)
     f <- names(x)
   } else if (is.null(names(x))) {stop('Unnamed input; no file names')
@@ -87,7 +87,7 @@ write_sen_list <- function(x, type) {
 }
 
 
-## data pre-processing
+## main -----
 # read data
 cookie_control <- read_multi_csv('./data/Control/cookie')
 cookie_dementia <- read_multi_csv('./data/Dementia/cookie')
