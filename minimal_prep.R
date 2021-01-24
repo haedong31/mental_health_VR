@@ -41,16 +41,21 @@ text_prep <- function(x) {
       str_trim(side = 'both') # trim whitespace from start and end
     
     # remove parentheses enclosing characters
-    pidx <- str_locate(u, '\\([[:alpha:]^\\)]+\\)')
+    pidxs <- str_locate_all(u, '\\([[:alpha:]]^\\)]+\\)')
     for (j in seq_along(u)) {
-      if (any(is.na(pidx[j, ]))) {next}
+      pidx <- pidxs[[j]] 
+      if (nrow(pidx) == 0) {next}
       
-      a <- pidx[j, 1]
-      b <- pidx[j, 2]
-      str_sub(u[j], a, a) <- ''
-      str_sub(u[j], b-1, b-1) <- ''
+      cnt <- 0
+      for (k in 1:nrow(pidx)) {
+        a <- pidx[k, 1] - cnt
+        b <- pidx[k, 2] - cnt
+        str_sub(u[j], a, a) <- ''
+        str_sub(u[j], b-1, b-1) <- ''
+
+        cnt = k*2
+      }
     }
-    
     s[[i]] <- u
   }
   
