@@ -41,7 +41,7 @@ text_prep <- function(x) {
       str_trim(side = 'both') # trim whitespace from start and end
     
     # remove parentheses enclosing characters
-    pidxs <- str_locate_all(u, '\\([[:alpha:]]^\\)]+\\)')
+    pidxs <- str_locate_all(u, '\\([[:alpha:]^\\)]+\\)')
     for (j in seq_along(u)) {
       pidx <- pidxs[[j]] 
       if (nrow(pidx) == 0) {next}
@@ -53,7 +53,7 @@ text_prep <- function(x) {
         str_sub(u[j], a, a) <- ''
         str_sub(u[j], b-1, b-1) <- ''
 
-        cnt = k*2
+        cnt <- k*2
       }
     }
     s[[i]] <- u
