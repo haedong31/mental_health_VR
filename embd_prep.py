@@ -1,62 +1,10 @@
 from pytorch_pretrained_bert import BertTokenizer
-import os
-from glob import glob
+from bert_vocab_check import BertVocabCheck
+from expand_contraction import expand_contraction
 
 
-## custom functions -----
-def read_and_concat(group):
-    base_dir = os.path.join(".", "data", "cookie_minimal_prep")
-    if group == "control":
-        paths = glob(os.path.join(base_dir, "control", "*.txt"))
-    elif group == "experimental":
-        paths = glob(os.path.join(base_dir, "dementia", "*.txt"))
-    else:
-        raise ValueError("Wrong group name")
-    
-    concat_utts = list()
-    for path in paths:
-        with open(path) as f:
-            utt = f.read().splitlines()
-            concat_utts.append(" ".join(utt))
-    return concat_utts
-
-def word_counter(utterances):
-    freq_vocab = dict()
-    for utt in utterances:
-        words = utt.split()
-        for word in words:
-            if word in freq_vocab:
-                freq_vocab[word] += 1
-            else:
-                freq_vocab[word] = 1
-    return freq_vocab
-
-def vocab_bert_check(vocab):
-    oov = dict()
-    num_embd = 0
-    freq_embd = 0
-    freq_oov = 0
-
-    tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
-    for word in vocab:
-        if word in tokenizer.vocab:
-            num_embd += 1
-            freq_embd += vocab[word]
-        else:
-            oov[word] = vocab[word]
-            freq_oov += vocab[word]
-    
-    print(f"% of words in BERT vocab: {num_embd/len(tokenizer.vocab):.2%}")
-    print(f"% of word counts in BERT vocab: {freq_embd/(freq_embd+freq_oov):.2%}")
-    sorted_oov = dict(sorted(oov.items(), key=lambda x: x[1], reverse=True))
-
-    return sorted_oov
-
-## main -----
-cookie_con = read_and_concat("control")
-cookie_exp = read_and_concat("experimental")
-
-tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
+# check some words in BERT vocab
+tokenizer = BertTokenizer.from_pretrained("bert-base-cased")
 # 'she' in tokenizer.vocab # True
 # 'I' in tokenizer.vocab # False
 # 'he' in tokenizer.vocab # True
@@ -68,12 +16,13 @@ tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
 'flowing' in tokenizer.vocab
 
 # 1st run
-freq_vocab_con = word_counter(cookie_con)
-freq_vocab_exp = word_counter(cookie_exp)
+con_vocab = BertVocabCheck("control")
+exp_vocab = BertVocabCheck("experimental")
 
-print("Control group")
-oov_con = vocab_bert_check(freq_vocab_con)
+print(list(con_vocab.oov.items())[:10])
+print(list(exp_vocab.oov.items())[:10])
 
-print("Experimental group")
-oov_exp = vocab_bert_check(freq_vocab_exp)
+con_utts = con_vocab.utts
+exp_utts = exp_vocab.utts
 
+expand_contraction(con_utts[0])
