@@ -9,6 +9,10 @@ Link to the original code: https://github.com/dipanjanS/practical-machine-learni
 Changed the file and function name
 """
 
+
+import re
+
+
 contraction_map = {
 "ain't": "is not",
 "aren't": "are not",
@@ -134,3 +138,23 @@ contraction_map = {
 "you're": "you are",
 "you've": "you have"
 }
+
+
+def expand_contraction(text):
+    cont_pattern = re.compile("({})".format("|".join(contraction_map.keys())),
+                              flags=re.IGNORECASE|re.DOTALL)
+    
+    expanded_text = cont_pattern.sub(expand_match, text)
+    expanded_text = re.sub("'", "", expanded_text)
+    return expanded_text
+
+
+def expand_match(cont):
+    match = cont.group(0)
+    first_char = match[0]
+    expanded_cont = contraction_map.get(match)\
+                            if contraction_map.get(match)\
+                            else contraction_map.get(match.lower())                       
+    
+    expanded_cont = first_char + expanded_cont[1:]
+    return expanded_cont
