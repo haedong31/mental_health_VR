@@ -6,6 +6,7 @@ from glob import glob
 class BertVocabCheck:
     def __init__(self, group):
         self.group = group
+        self.utts = list()
         self.freq_vocab = dict()
         self.oov = dict()
 
@@ -25,11 +26,10 @@ class BertVocabCheck:
             with open(path) as f:
                 utt = f.read().splitlines()
                 concat_utts.append(" ".join(utt))
-        return concat_utts
+        self.utts = concat_utts
 
     def word_counter(self):
-        utterances = self.read_and_concat()
-        for utt in utterances:
+        for utt in self.utts:
             words = utt.split()
             for word in words:
                 if word in self.freq_vocab:
@@ -58,5 +58,6 @@ class BertVocabCheck:
         self.oov = dict(sorted(oov.items(), key=lambda x: x[1], reverse=True))
 
     def run(self):
+        self.read_and_concat()
         self.word_counter()
         self.vocab_bert_check()
