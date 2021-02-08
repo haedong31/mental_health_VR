@@ -4,29 +4,11 @@ from glob import glob
 
 
 class BertVocabCheck:
-    def __init__(self, group):
-        self.group = group
-        self.utts = list()
+    def __init__(self, data):
+        self.utts = data
         self.freq_vocab = dict()
         self.oov = dict()
-
         self.run()
-
-    def read_and_concat(self):
-        base_dir = os.path.join(".", "data", "cookie_minimal_prep")
-        if self.group == "control":
-            paths = glob(os.path.join(base_dir, "control", "*.txt"))
-        elif self.group == "experimental":
-            paths = glob(os.path.join(base_dir, "dementia", "*.txt"))
-        else:
-            raise ValueError("Wrong group name")
-        
-        concat_utts = list()
-        for path in paths:
-            with open(path) as f:
-                utt = f.read().splitlines()
-                concat_utts.append(" ".join(utt))
-        self.utts = concat_utts
 
     def word_counter(self):
         for utt in self.utts:
