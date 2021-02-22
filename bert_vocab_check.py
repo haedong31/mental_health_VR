@@ -1,7 +1,4 @@
 from pytorch_pretrained_bert import BertTokenizer
-import os
-from glob import glob
-
 
 class BertVocabCheck:
     def __init__(self, data):
@@ -25,7 +22,7 @@ class BertVocabCheck:
         freq_embd = 0
         freq_oov = 0
 
-        tokenizer = BertTokenizer.from_pretrained("bert-base-cased")
+        tokenizer = BertTokenizer.from_pretrained("bert-base-cased", do_lower_case=False)
         for word in self.freq_vocab:
             if word in tokenizer.vocab:
                 num_embd += 1
@@ -34,12 +31,10 @@ class BertVocabCheck:
                 oov[word] = self.freq_vocab[word]
                 freq_oov += self.freq_vocab[word]
         
-        print(f"{self.group} group")
         print(f"% of words in BERT vocab: {num_embd/len(self.freq_vocab):.2%}")
         print(f"% of word counts in BERT vocab: {freq_embd/(freq_embd+freq_oov):.2%}")
         self.oov = dict(sorted(oov.items(), key=lambda x: x[1], reverse=True))
 
     def run(self):
-        self.read_and_concat()
         self.word_counter()
         self.vocab_bert_check()
