@@ -1,4 +1,4 @@
-from pytorch_pretrained_bert import BertTokenizer, BertForMaskedLM
+from transformers import BertTokenizer
 from bert_vocab_check import BertVocabCheck
 from expand_contraction import expand_contraction
 from glob import glob
@@ -167,5 +167,3 @@ print(list(exp_oov.items())[:10])
 # with open(expf, "wt") as f:
 #     for u in exp_utts:
 #         f.write(u+"\n")
-
-## words imputation with BERT -----
