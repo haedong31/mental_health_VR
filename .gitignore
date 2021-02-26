@@ -1,8 +1,9 @@
 # files
 scratch.py
 scratch.r
-*.docx
 notes.txt
+*.docx
+*.mp3
 
 # folders
 /literature/

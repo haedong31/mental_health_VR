@@ -167,3 +167,10 @@ print(list(exp_oov.items())[:10])
 # with open(expf, "wt") as f:
 #     for u in exp_utts:
 #         f.write(u+"\n")
+
+utts = con_utts + exp_utts
+labels = [0]*len(con_utts) + [1]*len(exp_utts)
+
+df = pd.DataFrame(data={"utts": utts, "labels": labels})
+df = df.sample(frac = 1)
+df.to_csv("./data/cookie_ebd_prep.csv")

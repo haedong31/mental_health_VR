@@ -29,7 +29,7 @@ print(f"Explained variance with {pca_dim}-dim: {np.sum(pca.explained_variance_ra
 tsne = TSNE(n_components=2, perplexity=40, n_iter=50000)
 tsne_rslt = tsne.fit_transform(ebd_utts)
 
-y = [0 for _ in range(len(con_utts))] + [1 for _ in range(len(exp_utts))]
+y = [0]*len(con_utts) + [1]*len(exp_utts)
 df = pd.DataFrame(data={"x1": tsne_rslt[:,0], "x2": tsne_rslt[:,1], "y": y})
 sns.scatterplot(
     x="x1", y="x2", 
