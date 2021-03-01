@@ -4,6 +4,7 @@ import torch
 from transformers import BertModel, BertTokenizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
+from sklearn import metrics
 
 def trunc_pad(s, trunc_len):
     # max length of sentences
@@ -64,12 +65,31 @@ cls_features = ebdded[0][:,0,:].numpy()
 labels = df["labels"]
 labels = labels.drop(labels.index[long_sen_idx])
 labels = np.array(labels)
-trnx, testx, trny, testy = train_test_split(cls_features, labels)
 
-# train logistic regression
-lr_clf = LogisticRegression(max_iter=10000)
-lr_clf.fit(trnx, trny)
+# training and prediction of logistic regression
+num_iters = 30
+precisions = list()
+recalls = list()
+f1_scores = list()
+accuracies = list()
+for i in range(num_iters):
+    trnx, testx, trny, testy = train_test_split(cls_features, labels)
+    
+    # train logistic regression
+    lr_clf = LogisticRegression(max_iter=10000)
+    lr_clf.fit(trnx, trny)
+    
+    # prediction
+    predy = lr_clf.predict(testx)
+    
+    # performance measure
+    precisions.append(metrics.precision_score(testy, predy))
+    recalls.append(metrics.recall_score(testy, predy))
+    f1_scores.append(metrics.f1_score(testy, predy))
+    accuracies.append(metrics.accuracy_score(testy, predy))
 
-# prediction
-acc = lr_clf.score(testx, testy)
-acc
+# save results
+result_df = pd.DataFrame(data={"precision": precisions, "recall": recalls,
+                               "f1": f1_scores, "accuracy": accuracies})
+result_df.to_excel("./logistic.xlsx")
+boxplot = result_df.boxplot()

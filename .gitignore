@@ -4,6 +4,7 @@ scratch.r
 notes.txt
 *.docx
 *.mp3
+*.zip
 
 # folders
 /literature/
