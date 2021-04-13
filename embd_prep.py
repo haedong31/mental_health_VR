@@ -175,9 +175,9 @@ labels = [0]*len(con_utts) + [1]*len(exp_utts)
 
 df = pd.DataFrame(data={"utts": utts, "labels": labels})
 df = df.sample(frac = 1)
-df.to_csv("./data/cookie_ebd_prep.csv")
+df.to_csv("./data/text/cookie_ebd_prep.csv")
 
-## train-test split
+## train-test split -----
 def trunc_pad(s, trunc_len):
     # max length of sentences
     max_len = 0
@@ -208,7 +208,7 @@ def trunc_pad(s, trunc_len):
     return padded, long_sen_idx
 
 # import dataset
-df = pd.read_csv("./data/cookie_ebd_prep.csv", index_col=0)
+df = pd.read_csv("./data/text/cookie_ebd_prep.csv", index_col=0)
 df["labels"].value_counts()
 
 # load model and tokenizer
