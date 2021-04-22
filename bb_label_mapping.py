@@ -50,6 +50,7 @@ bb_label_mapping = {
     'sink': ['sink'],
     'sinks': ['sink'],
     'stool': ['stool'],
+    'stools': ['stool'],
     'water': ['water'],
     'window': ['window'],
     'windows': ['window'],
