@@ -1,20 +1,22 @@
 from transformers import BertTokenizer, BertModel
 from bert_vocab_check import BertVocabCheck
-from expand_contraction import expand_contraction
+
 from glob import glob
-from sklearn.model_selection import train_test_split
-import pandas as pd
-import numpy as np
+from pathlib import Path
 import re
 import os
 
+from sklearn.model_selection import train_test_split
+from expand_contraction import expand_contraction
+import pandas as pd
+import numpy as np
+
 ## custom functions -----
-def read_and_concat(group):
-    base_dir = os.path.join(".", "data", "cookie_minimal_prep")
+def read_and_concat(source_dir, group):
     if group == "control":
-        paths = glob(os.path.join(base_dir, "control", "*.txt"))
+        paths = glob(os.path.join(source_dir, "control", "*.txt"))
     elif group == "experimental":
-        paths = glob(os.path.join(base_dir, "dementia", "*.txt"))
+        paths = glob(os.path.join(source_dir, "dementia", "*.txt"))
     else:
         raise ValueError("Wrong group name")
     
@@ -24,11 +26,11 @@ def read_and_concat(group):
             utt = f.read().splitlines()
             concat_utts.append(" ".join(utt))
     
-    return concat_utts
+    return concat_utts, paths
 
 def save_oov(oov_dict, save_name):
     k = list(oov_dict.keys())
-    v = list(oov_dict.values())
+    v = list(oov_dict.values()) 
     oov_df = pd.DataFrame(data={"word": k, "count": v})
 
     save_path = "./results/oov/" + save_name + ".xlsx"
@@ -55,8 +57,9 @@ def comp_word_expand(con, ds):
     return ds
 
 ## import data -----
-con_utts = read_and_concat("control")
-exp_utts = read_and_concat("experimental")
+source_dir = Path("./data/text/cookie_minimal_prep")
+con_utts, con_paths = read_and_concat(source_dir, "control")
+exp_utts, exp_paths = read_and_concat(source_dir, "experimental")
 
 # check some words in BERT vocab
 tokenizer = BertTokenizer.from_pretrained("bert-base-cased", do_lower_case=False)
@@ -160,6 +163,9 @@ print(list(exp_oov.items())[:10])
 # save_oov(con_oov, "con3")
 # save_oov(exp_oov, "exp3")
 
+con_utts = pattern_sub("overflowing", "over flow", con_utts)
+exp_utts = pattern_sub("overflowing", "over flow", exp_utts)
+
 # conf = "./data/cookie_ebd_prep_con.txt"
 # with open(conf, "wt") as f:
 #     for u in con_utts:
@@ -172,10 +178,12 @@ print(list(exp_oov.items())[:10])
 
 utts = con_utts + exp_utts
 labels = [0]*len(con_utts) + [1]*len(exp_utts)
+paths = con_paths + exp_paths
 
-df = pd.DataFrame(data={"utts": utts, "labels": labels})
+
+df = pd.DataFrame(data={"utts": utts, "labels": labels, "paths": paths})
 df = df.sample(frac = 1)
-df.to_csv("./data/text/cookie_ebd_prep.csv")
+df.to_csv("./data/text/cookie_ebd_prep.csv", index=False)
 
 ## train-test split -----
 def trunc_pad(s, trunc_len):
