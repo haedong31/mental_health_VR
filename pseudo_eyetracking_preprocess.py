@@ -1,7 +1,5 @@
 import os
 from pathlib import Path
-
-import cv2
 from PIL import Image
 
 import numpy as np
@@ -15,9 +13,9 @@ eyetrack_dir = Path('./data/pseudo_eyetracking')
 text_dir = Path('./data/text')
 
 # Boston Cookie Theft picture
-# cookie = cv2.cvtColor(cv2.imread(os.path.join(eyetrack_dir, 'cookie.jpg')), cv2.COLOR_BGR2RGB)
 cookie = Image.open(os.path.join(eyetrack_dir, 'cookie.jpg'))
 cookie = cookie.convert('RGB')
+cookie_width, cookie_height = cookie.size
 
 # bounding-box labels on the Boston Cookie picture
 bb_label_df = pd.read_csv(os.path.join(eyetrack_dir, 'labels_boston_cookie.csv'), header=None)
@@ -26,27 +24,90 @@ gaze_words = bb_label_mapping.keys()
 # transcripts
 text_df = pd.read_csv(os.path.join(text_dir, 'cookie_ebd_prep.csv'))
 
-def fill_box(im, label):
-    print('empty')
+# coloring "gazing boxes" on the Boston Cookie picture
+def fill_box(utt, num_boxes=5):
+    # create graphical objects
+    fig, ax = plt.subplots()
+    
+    # draw the cookie image
+    p = ax.imshow(cookie)
+
+    gaze_words_insitu = []
+    len_gaze_words_insitu = 0
+    words = utt.split()
+    for n, word in enumerate(words):
+        if word in gaze_words:
+            # save word for exception rules later
+            gaze_words_insitu.append(word)
+            len_gaze_words_insitu += 1
+
+            bb_labels = bb_label_mapping.get(word)
+            for bb_label in bb_labels:
+                # exception 1: cookie jar (prevent double counting)
+                if word == 'jar':
+                    # check the previous gazing word
+                    if (gaze_words_insitu[(len_gaze_words_insitu-1)-1] == 'cookie' or 
+                        gaze_words_insitu[(len_gaze_words_insitu-1)-1] == 'cookies'):
+                        continue
+                # exception 2: lady (girl or mother)
+                elif word == 'lady':
+                    if n == 0:
+                        pass
+                    if words[n-1] == 'young' or words[n-1] == 'little':
+                        bb_label = 'girl'
+                        gaze_words_insitu[(len_gaze_words_insitu-1)] = 'young lady'
+                # exception 3: she (girl or mother)
+                elif word == 'she':
+                    # find the nearest word referring 'she'
+                    she_candidates = ['lady', 'young lady', 'girl', 'girls']
+                    she_ref = ''
+                    for gw in gaze_words_insitu:
+                        if gw in she_candidates:
+                            she_ref = gw
+                    
+                    if she_ref == '':
+                        bb_label = bb_label_mapping.get('she')[0] # girl
+                    else:
+                        bb_label = bb_label_mapping.get(she_ref)[0]
+                    
+                idx = bb_label_df[0].index[bb_label_df[0] == bb_label]
+                bb_label_info = bb_label_df.loc[idx].values.flatten().tolist()
+
+                # bounding-box information            
+                xmin = bb_label_info[1]
+                ymin = bb_label_info[2]
+                w = bb_label_info[3]
+                h = bb_label_info[4]
+                
+                # center of bounding box
+                xcenter = xmin + np.floor(w/2)
+                ycenter = ymin + np.floor(h/2)
+
+                # add filling boxes
+                for _ in range(num_boxes):
+                    scaler = np.random.uniform(0,1,1)[0]
+                    sw = scaler*w
+                    sh = scaler*h
+                                    
+                    xprime = xcenter - np.floor(sw/2)
+                    yprime = ycenter - np.floor(sh/2)
+                    
+                    p = ax.add_patch(Rectangle(
+                            (xprime,yprime), sw, sh, color='red', fill=True, alpha=0.1))
+    return fig, p
 
 for idx, row in text_df.iterrows():
-    pass
-
-label1 = bb_label_df.iloc[0]
-plt.imshow(cookie)
-plt.gca().add_patch(Rectangle((label1[1],label1[2]), label1[3], label1[4], 
-                              color='red', fill=False, lw=3))
-
-row = text_df.iloc[0]
-utt = row['utts']
-
-# fill box
-for word in utt.split():
-    print(word)
-    if word in gaze_words:
-        bb_labels = bb_label_mapping.get(word)
-        for bb_label in bb_labels:
-            idx = bb_label_df[0].index[bb_label_df[0] == bb_label]
-            bb_label_info = bb_label_df.loc[idx].values.flatten().tolist()
-            
-            # need to implement code filling bounding box using info in bb_label_info
+    fig, p = fill_box(row['utts'])
+    text_path = row['paths']
+    
+    file_name = os.path.basename(text_path)
+    file_name = os.path.splitext(file_name)[0] + '.png'
+    
+    if row['labels'] == 0:
+        fig.savefig(Path('./data/pseudo_eyetracking/control/'+file_name))
+    elif row['labels'] == 1:
+        fig.savefig(Path('./data/pseudo_eyetracking/dementia/'+file_name))
+    else:
+        raise ValueError('save path does not exist')
+    plt.clf()
+    
