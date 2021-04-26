@@ -1,14 +1,17 @@
 import os
 from pathlib import Path
+from glob import glob
 from PIL import Image
 
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
+from sklearn.model_selection import train_test_split
 
 from bb_label_mapping import bb_label_mapping
 
+##### generate pseudo eye-tracking data -----
 eyetrack_dir = Path('./data/pseudo_eyetracking')
 text_dir = Path('./data/text')
 
@@ -104,10 +107,41 @@ for idx, row in text_df.iterrows():
     file_name = os.path.splitext(file_name)[0] + '.png'
     
     if row['labels'] == 0:
-        fig.savefig(Path('./data/pseudo_eyetracking/control/'+file_name))
+        os.path.join(eyetrack_dir, 'control', file_name)
+        fig.savefig(os.path.join(eyetrack_dir, 'control', file_name))
     elif row['labels'] == 1:
-        fig.savefig(Path('./data/pseudo_eyetracking/dementia/'+file_name))
+        fig.savefig(os.path.join(eyetrack_dir, 'dementia', file_name))
     else:
         raise ValueError('save path does not exist')
     plt.clf()
     
+##### train-test split -----
+con_paths = glob(os.path.join(eyetrack_dir, 'control', '*.png'))
+exp_paths = glob(os.path.join(eyetrack_dir, 'dementia', '*.png'))
+
+con_meta_df = pd.DataFrame(data={'path':con_paths, 'label':[0]*len(con_paths)})
+exp_meta_df = pd.DataFrame(data={'path':exp_paths, 'label':[1]*len(exp_paths)})
+
+# train:valid:test = 0.765:0.135:0.1
+train_test_ratio = 0.9
+train_valid_ratio = 0.85
+
+# test
+con_meta_train, con_meta_test = train_test_split(con_meta_df, train_size=train_test_ratio)
+exp_meta_train, exp_meta_test = train_test_split(exp_meta_df, train_size=train_test_ratio)
+
+# valid
+con_meta_train, con_meta_valid = train_test_split(con_meta_train, train_size=train_valid_ratio)
+exp_meta_train, exp_meta_valid = train_test_split(exp_meta_train, train_size=train_valid_ratio)
+
+meta_train = pd.concat([con_meta_train,exp_meta_train], ignore_index=True, sort=False)
+meta_train = meta_train.sample(frac=1)
+meta_valid = pd.concat([con_meta_valid,exp_meta_valid], ignore_index=True, sort=False)
+meta_valid = meta_valid.sample(frac=1)
+meta_test = pd.concat([con_meta_test,exp_meta_test], ignore_index=True, sort=False)
+meta_test = meta_test.sample(frac=1)
+
+# save
+meta_train.to_csv(os.path.join(eyetrack_dir, 'tain_meta.csv'), index=False)
+meta_valid.to_csv(os.path.join(eyetrack_dir, 'valid_meta.csv'), index=False)
+meta_train.to_csv(os.path.join(eyetrack_dir, 'test_meta.csv'), index=False)
