@@ -142,6 +142,6 @@ meta_test = pd.concat([con_meta_test,exp_meta_test], ignore_index=True, sort=Fal
 meta_test = meta_test.sample(frac=1)
 
 # save
-meta_train.to_csv(os.path.join(eyetrack_dir, 'tain_meta.csv'), index=False)
+meta_train.to_csv(os.path.join(eyetrack_dir, 'train_meta.csv'), index=False)
 meta_valid.to_csv(os.path.join(eyetrack_dir, 'valid_meta.csv'), index=False)
 meta_test.to_csv(os.path.join(eyetrack_dir, 'test_meta.csv'), index=False)
