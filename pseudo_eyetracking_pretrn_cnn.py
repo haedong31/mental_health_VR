@@ -102,7 +102,7 @@ model = models.resnet18(pretrained=True)
 
 # modify output layer (binary output)
 num_features = model.fc.in_features
-models.fc = nn.Sequential(*[nn.Dropout(p=config_dict.get('drop_out')), nn.Linear(num_features, 2)])
+model.fc = nn.Sequential(*[nn.Dropout(p=config_dict.get('drop_out')), nn.Linear(num_features, 2)])
 
 # define optimizer
 optimizer = optim.Adam(model.parameters(), lr=config_dict.get('lr'))
