@@ -3,6 +3,7 @@ notes.txt
 *.docx
 *.mp3
 *.zip
+.DS_Store
 
 # folders
 /literature/
