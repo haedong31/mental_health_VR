@@ -5,6 +5,7 @@ from PIL import Image
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from sklearn import metrics
 
 import torch
 import torch.nn as nn
@@ -49,44 +50,7 @@ class EyeTrackDataSet(Dataset):
 
     def __len__(self):
         return len(self.file_paths)
-
-##### train and test routine -----
-# def train(train_loader, valid_loader, 
-#     model, device, optimizer, criterion, 
-#     num_epochs, log_interval):
     
-#     iters = 0
-#     train_loss_insitu = 0.0
-#     valid_loss_insitu = 0.0
-#     train_loss_list = []
-#     valid_loss_list = []
-
-#     model.train()
-#     for epoch in range(num_epochs):
-#         for batch_idx, (inputs, labels) in enumerate(train_loader):
-#             inputs = inputs.to(device)
-#             labels = labels.to(device)
-
-#             # feedforward
-#             outputs = model(inputs)
-
-#             # backward & update
-#             loss = criterion(outputs, labels)
-#             optimizer.zero_grad()
-#             loss.backward()
-#             optimizer.step()
-
-#             # print training stats
-#             iters = epoch*len(train_loader) + batch_idx
-#             if batch_idx % log_interval == 0:
-                
-
-#                 print('Epoch: {} | [{}/{}]'.format(
-#                     epoch, iters, num_epochs*len(train_loader)))
-
-# def test(data_loader, model):
-#     pass
-
 ##### data preparation -----
 def custom_imshow(img):
     img = (img/2) + 0.5 # unnormalize
@@ -103,23 +67,12 @@ test_ds = EyeTrackDataSet(os.path.join(eyetrack_dir, 'test_meta.csv'))
 train_dl = DataLoader(train_ds, batch_size=config_dict.get('batch_size'))
 valid_dl = DataLoader(valid_ds, batch_size=config_dict.get('batch_size'))
 test_dl = DataLoader(test_ds, batch_size=config_dict.get('batch_size'))
-
-meta_df_path = os.path.join(eyetrack_dir, 'train_meta.csv')
-meta_df = pd.read_csv(meta_df_path)
-file_paths = []
-labels = []
-
-for _, row in meta_df.iterrows():
-    file_paths.append(row['path'])
-    labels.append(row['label'])
     
-dataiter = iter(train_dl)
-images, labels = dataiter.next()
-custom_imshow(torchvision.utils.make_grid(images))
+# dataiter = iter(train_dl)
+# images, labels = dataiter.next()
+# custom_imshow(torchvision.utils.make_grid(images))
 
-
-
-##### run -----
+##### model preparation -----
 # pretrained model
 model = models.resnet18(pretrained=True)
 model.fc = nn.Sequential(nn.Dropout(p=config_dict.get('drop_out')),
@@ -136,20 +89,22 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 model.to(device)
 print(f'Device to use: {device}')
 
+##### training -----
 train_running_loss = 0.0
 valid_running_loss = 0.0
+valid_acc = 0.0
 train_loss_list = []
 valid_loss_list = []
+valid_acc_list = []
 
 num_epochs = config_dict.get('num_of_epochs')
-num_iters = num_epochs*len(train_dl)
-log_interval = 100
+log_interval = 50
 
 for epoch in range(config_dict.get('num_of_epochs')):
     # training
     model.train()
     for batch_idx, (inputs, labels) in enumerate(train_dl):
-        if batch_idx == 105:
+        if (batch_idx+1) == 105:
             print('debug point')
         
         inputs = inputs.to(device)
@@ -172,25 +127,48 @@ for epoch in range(config_dict.get('num_of_epochs')):
             train_loss_list.append(avg_train_loss)
             
             print('[{:d}/{:2d}, {:d}/{:d}] Train loss: {:.4f}'.format(
-                epoch, num_epochs, batch_idx+1, num_iters, avg_train_loss))
+                epoch, num_epochs, batch_idx+1, len(train_dl), avg_train_loss))
             train_running_loss = 0.0
 
-    # validation    
+    # validation for each epoch
     print('Start validation')
+    correct = 0
+    total = 0
     model.eval()
     with torch.no_grad():
-        for inputs, labels in valid_dl:
+        for batch_idx, (inputs, labels) in enumerate(valid_dl):
             inputs = inputs.to(device)
+            labels = labels.type(torch.FloatTensor)
             labels = inputs.to(device)
-
+            
+            # forward
             outputs = model(inputs)
+            outputs = torch.squeeze(outputs, 1)
+            
+            # loss
             loss = criterion(outputs, labels)
-
             valid_running_loss += loss
-    
+            
+            # prediction
+            total += labels.size(0)
+            outputs = (outputs > 0.5).float()
+            correct += (outputs == labels).sum().item()
+            
     avg_valid_loss = valid_running_loss/len(valid_dl)
     valid_loss_list.append(avg_valid_loss)
-    print('Last train loss: {:.4f}, Valid loss: {:.4f}'.format(
-        train_loss_list[-1], avg_valid_loss))
-
+    valid_acc = correct/total
+    valid_acc_list.append(valid_acc)
+    print('Last train loss: {:.4f}, Valid loss: {:.4f}, Accuracy: {:.2%}'.format(
+        train_loss_list[-1], avg_valid_loss, valid_acc))
+    
+    train_running_loss = 0.0
+    valid_running_loss = 0.0
+    
 print('Finished training')
+
+##### testing -----
+print('Start testing')
+y_pred = []
+y_true = []
+
+
