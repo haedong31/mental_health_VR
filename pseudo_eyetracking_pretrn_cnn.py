@@ -5,6 +5,7 @@ from PIL import Image
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import seaborn as sns
 from sklearn import metrics
 
 import torch
@@ -25,7 +26,7 @@ config_dict = {'num_of_epochs': 10, 'batch_size': 4, 'drop_out': 0.5, 'lr': 2e-5
 # config_dict = task.connect(config_dict)
 
 eyetrack_dir = Path('./data/pseudo_eyetracking')
-classes = ('HC', 'AD')
+classes = ('AD','HC')
 
 ##### dataset class -----
 class EyeTrackDataSet(Dataset):
@@ -103,10 +104,7 @@ log_interval = 50
 for epoch in range(config_dict.get('num_of_epochs')):
     # training
     model.train()
-    for batch_idx, (inputs, labels) in enumerate(train_dl):
-        if (batch_idx+1) == 105:
-            print('debug point')
-        
+    for batch_idx, (inputs, labels) in enumerate(train_dl):        
         inputs = inputs.to(device)
         labels = labels.type(torch.FloatTensor)
         labels = labels.to(device)
@@ -139,7 +137,7 @@ for epoch in range(config_dict.get('num_of_epochs')):
         for batch_idx, (inputs, labels) in enumerate(valid_dl):
             inputs = inputs.to(device)
             labels = labels.type(torch.FloatTensor)
-            labels = inputs.to(device)
+            labels = labels.to(device)
             
             # forward
             outputs = model(inputs)
@@ -163,12 +161,38 @@ for epoch in range(config_dict.get('num_of_epochs')):
     
     train_running_loss = 0.0
     valid_running_loss = 0.0
-    
+    valid_acc = 0.0
+
 print('Finished training')
 
 ##### testing -----
 print('Start testing')
-y_pred = []
 y_true = []
+y_pred = []
+model.eval()
+with torch.no_grad():
+    for batch_idx, (inputs, labels) in enumerate(test_dl):
+        inputs = inputs.to(device)
+        labels = labels.type(torch.FloatTensor)
+        labels = labels.to(device)
+        
+        # forward
+        outputs = model(inputs)
+        outputs = torch.squeeze(outputs, 1)        
+        outputs = (outputs > 0.5).float()
 
+        y_true.extend(labels)
+        y_pred.extend(outputs)
 
+print('Classification report')
+print(metrics.classification_report(y_true, y_pred, labels=classes, digits=4))
+
+cm = metrics.confusion_matrix(y_true, y_pred, labels=classes)
+ax = plt.subplot()
+sns.heatmap(cm, annot=True, ax=ax, cmap='Blues')
+
+ax.set_title("Confusion matrix")
+ax.set_xlabel("Predicted labels")
+ax.set_ylabel("True labels")
+ax.xaxis.set_ticklabels(['AD', 'HC'])
+ax.yaxis.set_ticklabels(['AD', 'HC'])
