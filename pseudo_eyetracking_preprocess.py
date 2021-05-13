@@ -30,11 +30,12 @@ text_df = pd.read_csv(os.path.join(text_dir, 'cookie_ebd_prep.csv'))
 # coloring "gazing boxes" on the Boston Cookie picture
 def fill_box(utt, num_boxes=5):
     # create graphical objects
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(frameon=False)
     
     # draw the cookie image
+    ax.axis('off')
     p = ax.imshow(cookie)
-
+    
     gaze_words_insitu = []
     len_gaze_words_insitu = 0
     words = utt.split()
