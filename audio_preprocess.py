@@ -31,13 +31,13 @@ train_test_ratio = 0.90
 train_valid_ratio = 0.85
 
 # control group
-con_paths = glob("./data/audio/control/cookie/*.wav")
+con_paths = glob("./data/audio/control/*.wav")
 con_meta = pd.DataFrame(data={"file_paths": con_paths, "class": [0]*len(con_paths)})
 con_meta_train, con_meta_test = train_test_split(con_meta, train_size=train_test_ratio, random_state=1)
 con_meta_train, con_meta_valid = train_test_split(con_meta_train, train_size=train_valid_ratio, random_state=1)
 
 # experimental group (dementia)
-exp_paths = glob("./data/audio/dementia/cookie/*.wav")
+exp_paths = glob("./data/audio/dementia/*.wav")
 exp_meta = pd.DataFrame(data={"file_paths": exp_paths, "class": [1]*len(exp_paths)})
 exp_meta_train, exp_meta_test = train_test_split(exp_meta, train_size=train_test_ratio, random_state=1)
 exp_meta_train, exp_meta_valid = train_test_split(exp_meta_train, train_size=train_valid_ratio, random_state=1)
