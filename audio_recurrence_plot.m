@@ -70,7 +70,7 @@ for i = 1:num_files
     % recurrence plot
     rp_file_name = strsplit(audio_file_name, '.');
     rp_file_name = strcat(rp_file_name{1}, '.png');
-    out_path = strcat(folder_name, rp_file_name);
+    out_path = strcat(folder_name, '/', rp_file_name);
     
     figure('Position',[100, 100, 700, 700])
     imagesc(rec_mx)
@@ -81,4 +81,5 @@ for i = 1:num_files
     set(gca, 'Visible', 'off')
     
     saveas(gcf, out_path)
+    close
 end
