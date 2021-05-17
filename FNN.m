@@ -1,4 +1,4 @@
-function [fnn_ratios] = FNN(x, tau, dim, r, tol)
+function [fnn_ratios] = fnn(x, tau, dim, r, tol)
     % x [vector]; input signal   
     % tau [integer]; time lag
     % dim [vector]; embedding dimension sizes
@@ -26,7 +26,6 @@ function [fnn_ratios] = FNN(x, tau, dim, r, tol)
 
     fnn_ratios = zeros(1, length(dim));
     for m=1:length(dim)
-        fprintf('Dimension %i \n', m)
         fnn_cnts = 0;
 
         % calculate new distances
