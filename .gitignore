@@ -11,7 +11,7 @@ notes.txt
 /DementiaBank/
 /data/
 /results/
-
+/tensorboard_logs/
 
 ## R -----
 # History files

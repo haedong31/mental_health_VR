@@ -1,7 +1,6 @@
 import cv2
 from pathlib2 import Path
 
-import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -11,18 +10,18 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
+from torch.utils.tensorboard import SummaryWriter
 
 import torchvision.transforms as transforms
 import torchvision.models as models
 
-# from clearml import Task
+from clearml import Task
 
 ##### connect ClearML agent -----
-# task = Task.init(project_name="VR Mental Health Clinic", 
-#     take_name="Audio classification using recurrence plot")
-config_dict = {"num_epochs": 10, "batch_size": 4, 
-               "drop_out": 0.5, "base_lr": 0.005}
-# config_dict = task.connect(config_dict)
+task = Task.init(project_name="VR Mental Health Clinic", 
+                 task_name="Audio classification using recurrence plot")
+config_dict = {'num_of_epochs': 10, 'batch_size': 4, 'drop_out': 0.5, 'lr': 2e-5}
+config_dict = task.connect(config_dict)
 
 
 ##### data preparation -----
@@ -50,9 +49,9 @@ class AudioRpDataset(Dataset):
         return len(self.file_paths)
 
 audio_rp_dir = Path('./data/audio')
-train_ds = AudioRpDataset(audio_rp_dir/'train_meta.csv')
-valid_ds = AudioRpDataset(audio_rp_dir/'valid_meta.csv')
-test_ds = AudioRpDataset(audio_rp_dir/'test_meta.csv')
+train_ds = AudioRpDataset(str(audio_rp_dir/'meta_train.csv'))
+valid_ds = AudioRpDataset(str(audio_rp_dir/'meta_valid.csv'))
+test_ds = AudioRpDataset(str(audio_rp_dir/'meta_test.csv'))
 
 train_dl = DataLoader(train_ds, batch_size=config_dict.get('batch_size'))
 valid_dl = DataLoader(valid_ds, batch_size=config_dict.get('batch_size'))
@@ -85,6 +84,7 @@ valid_acc_list = []
 
 num_epochs = config_dict.get('num_of_epochs')
 log_interval = 50
+tensorboard_writer = SummaryWriter("./tensorboard_logs")
 
 for epoch in range(config_dict.get('num_of_epochs')):
     # training
@@ -110,7 +110,13 @@ for epoch in range(config_dict.get('num_of_epochs')):
             train_loss_list.append(avg_train_loss)
             
             print('[{:d}/{:2d}, {:d}/{:d}] Train loss: {:.4f}'.format(
-                epoch, num_epochs, batch_idx+1, len(train_dl), avg_train_loss))
+                epoch+1, num_epochs, batch_idx+1, len(train_dl), avg_train_loss))
+            
+            # tensor board
+            iteration = epoch*len(train_dl) + (batch_idx+1)
+            tensorboard_writer.add_scalar('Training loss', avg_train_loss, iteration)
+            tensorboard_writer.add_scalar('Learning rate', optimizer.param_groups[0]['lr'], iteration)
+
             train_running_loss = 0.0
 
     # validation for each epoch
@@ -144,10 +150,15 @@ for epoch in range(config_dict.get('num_of_epochs')):
     print('Last train loss: {:.4f}, Valid loss: {:.4f}, Accuracy: {:.2%}'.format(
         train_loss_list[-1], avg_valid_loss, valid_acc))
     
+    # tensor board
+    tensorboard_writer.add_scalar('Valid loss', avg_valid_loss, epoch)
+    tensorboard_writer.add_scalar('Accuracy', valid_acc, epoch)
+
     train_running_loss = 0.0
     valid_running_loss = 0.0
     valid_acc = 0.0
-
+    scheduler.step()
+    
 print('Finished training')
 
 ##### testing -----
@@ -170,9 +181,9 @@ with torch.no_grad():
         y_pred.extend(outputs)
 
 print('Classification report')
-print(metrics.classification_report(y_true, y_pred, labels=classes, digits=4))
+print(metrics.classification_report(y_true, y_pred, labels=[1,0], digits=4))
 
-cm = metrics.confusion_matrix(y_true, y_pred, labels=classes)
+cm = metrics.confusion_matrix(y_true, y_pred, labels=[1,0])
 ax = plt.subplot()
 sns.heatmap(cm, annot=True, ax=ax, cmap='Blues')
 
