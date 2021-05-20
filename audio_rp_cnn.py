@@ -20,9 +20,9 @@ from clearml import Task
 ##### connect ClearML agent -----
 task = Task.init(project_name="VR Mental Health Clinic", 
                  task_name="Audio classification using recurrence plot")
-config_dict = {'num_of_epochs': 10, 'batch_size': 4, 'drop_out': 0.5, 'lr': 2e-5}
+config_dict = {'num_of_epochs': 10, 'batch_size': 4, 'drop_out': 0.25, 'lr': 2e-5,
+               'save_path': Path('./results/20210520-auio-rp-cnn')}
 config_dict = task.connect(config_dict)
-
 
 ##### data preparation -----
 class AudioRpDataset(Dataset):
@@ -61,12 +61,12 @@ test_dl = DataLoader(test_ds, batch_size=config_dict.get('batch_size'))
 # pretrained model
 model = models.resnet18(pretrained=True)
 model.fc = nn.Sequential(nn.Dropout(p=config_dict.get('drop_out')),
-                         nn.Linear(512,1),
-                         nn.Sigmoid())
+                          nn.Linear(512,1),
+                          nn.Sigmoid())
 
 # define optimizer
 optimizer = optim.Adam(model.parameters(), lr=config_dict.get('lr'))
-scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=config_dict.get('num_of_epochs')//2, gamma=0.5)
+scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=config_dict.get('num_of_epochs')//4, gamma=0.5)
 criterion = nn.BCELoss()
 
 # device (GPU) setting
@@ -158,7 +158,7 @@ for epoch in range(config_dict.get('num_of_epochs')):
     valid_running_loss = 0.0
     valid_acc = 0.0
     scheduler.step()
-    
+
 print('Finished training')
 
 ##### testing -----
@@ -177,14 +177,14 @@ with torch.no_grad():
         outputs = torch.squeeze(outputs, 1)        
         outputs = (outputs > 0.5).float()
 
-        y_true.extend(labels)
-        y_pred.extend(outputs)
+        y_true.extend(labels.tolist())
+        y_pred.extend(outputs.tolist())
 
 print('Classification report')
 print(metrics.classification_report(y_true, y_pred, labels=[1,0], digits=4))
 
 cm = metrics.confusion_matrix(y_true, y_pred, labels=[1,0])
-ax = plt.subplot()
+fig, ax = plt.subplot()
 sns.heatmap(cm, annot=True, ax=ax, cmap='Blues')
 
 ax.set_title("Confusion matrix")
@@ -192,3 +192,11 @@ ax.set_xlabel("Predicted labels")
 ax.set_ylabel("True labels")
 ax.xaxis.set_ticklabels(['AD', 'HC'])
 ax.yaxis.set_ticklabels(['AD', 'HC'])
+
+##### save results -----
+save_path = config_dict.get('save_path')
+if save_path == None:
+    pass
+else:
+    torch.save(model.state_dict(), str(save_path/'model.pt'))
+    fig.savefig(str(save_path/'confusion_matrix.png'))
