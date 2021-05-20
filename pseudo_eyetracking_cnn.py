@@ -1,5 +1,5 @@
 import os
-from pathlib import Path
+from pathlib2 import Path
 from PIL import Image
 
 import pandas as pd
@@ -12,6 +12,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
+from torch.utils.tensorboard import SummaryWriter
 
 import torchvision
 import torchvision.transforms as transforms
@@ -20,13 +21,14 @@ import torchvision.models as models
 from clearml import Task
 
 ##### ClearML agent -----
-# task = Task.init(project_name='dementia_VR', 
-#     task_name='Pseudo eye-tracking data classification with pretrained model')
-config_dict = {'num_of_epochs': 10, 'batch_size': 4, 'drop_out': 0.5, 'lr': 2e-5}
-# config_dict = task.connect(config_dict)
+task = Task.init(project_name='VR Mental Health Clinic', 
+    task_name='Pseudo eye-tracking data classification with pretrained model')
+config_dict = {'num_of_epochs': 10, 'batch_size': 8, 'drop_out': 0.25, 'lr': 5e-5,
+               'save_dir': Path('./results/20210520-peudo-eyetracking-cnn')}
+config_dict = task.connect(config_dict)
+print(config_dict)
 
 eyetrack_dir = Path('./data/pseudo_eyetracking')
-classes = ('AD','HC')
 
 ##### dataset class -----
 class EyeTrackDataSet(Dataset):
@@ -82,7 +84,7 @@ model.fc = nn.Sequential(nn.Dropout(p=config_dict.get('drop_out')),
 
 # define optimizer
 optimizer = optim.Adam(model.parameters(), lr=config_dict.get('lr'))
-scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=config_dict.get('num_of_epochs')//2, gamma=0.5)
+scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=config_dict.get('num_of_epochs')//4, gamma=0.5)
 criterion = nn.BCELoss()
 
 # device (GPU) setting
@@ -100,6 +102,7 @@ valid_acc_list = []
 
 num_epochs = config_dict.get('num_of_epochs')
 log_interval = 50
+tensorboard_writer = SummaryWriter('./tensorboard_logs')
 
 for epoch in range(config_dict.get('num_of_epochs')):
     # training
@@ -125,7 +128,13 @@ for epoch in range(config_dict.get('num_of_epochs')):
             train_loss_list.append(avg_train_loss)
             
             print('[{:d}/{:2d}, {:d}/{:d}] Train loss: {:.4f}'.format(
-                epoch, num_epochs, batch_idx+1, len(train_dl), avg_train_loss))
+                epoch+1, num_epochs, batch_idx+1, len(train_dl), avg_train_loss))
+            
+            # tensor board
+            iteration = epoch*len(train_dl) + (batch_idx+1)
+            tensorboard_writer.add_scalar('Training loss', avg_train_loss, iteration)
+            tensorboard_writer.add_scalar('Learning rate', optimizer.param_groups[0]['lr'], iteration)
+
             train_running_loss = 0.0
 
     # validation for each epoch
@@ -148,8 +157,8 @@ for epoch in range(config_dict.get('num_of_epochs')):
             valid_running_loss += loss
             
             # prediction
-            total += labels.size(0)
             outputs = (outputs > 0.5).float()
+            total += labels.size(0)
             correct += (outputs == labels).sum().item()
             
     avg_valid_loss = valid_running_loss/len(valid_dl)
@@ -159,9 +168,14 @@ for epoch in range(config_dict.get('num_of_epochs')):
     print('Last train loss: {:.4f}, Valid loss: {:.4f}, Accuracy: {:.2%}'.format(
         train_loss_list[-1], avg_valid_loss, valid_acc))
     
+    # tensor board
+    tensorboard_writer.add_scalar('Valid loss', avg_valid_loss, epoch)
+    tensorboard_writer.add_scalar('Accuracy', valid_acc, epoch)
+
     train_running_loss = 0.0
     valid_running_loss = 0.0
     valid_acc = 0.0
+    scheduler.step()
 
 print('Finished training')
 
@@ -181,14 +195,14 @@ with torch.no_grad():
         outputs = torch.squeeze(outputs, 1)        
         outputs = (outputs > 0.5).float()
 
-        y_true.extend(labels)
-        y_pred.extend(outputs)
+        y_true.extend(labels.tolist())
+        y_pred.extend(outputs.tolist())
 
 print('Classification report')
-print(metrics.classification_report(y_true, y_pred, labels=classes, digits=4))
+print(metrics.classification_report(y_true, y_pred, labels=[1,0], digits=4))
 
-cm = metrics.confusion_matrix(y_true, y_pred, labels=classes)
-ax = plt.subplot()
+cm = metrics.confusion_matrix(y_true, y_pred, labels=[1,0])
+fig, ax = plt.subplots()
 sns.heatmap(cm, annot=True, ax=ax, cmap='Blues')
 
 ax.set_title("Confusion matrix")
@@ -196,3 +210,11 @@ ax.set_xlabel("Predicted labels")
 ax.set_ylabel("True labels")
 ax.xaxis.set_ticklabels(['AD', 'HC'])
 ax.yaxis.set_ticklabels(['AD', 'HC'])
+
+##### save results -----
+save_dir = config_dict.get('save_dir')
+if save_dir == None:
+    pass
+else:
+    torch.save(model.state_dict(), str(save_dir/'model3.pt'))
+    fig.savefig(str(save_dir/'confusion_matrix3.png'))

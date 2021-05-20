@@ -21,7 +21,7 @@ from clearml import Task
 task = Task.init(project_name="VR Mental Health Clinic", 
                  task_name="Audio classification using recurrence plot")
 config_dict = {'num_of_epochs': 10, 'batch_size': 4, 'drop_out': 0.25, 'lr': 2e-5,
-               'save_path': Path('./results/20210520-auio-rp-cnn')}
+               'save_dir': Path('./results/20210520-auio-rp-cnn')}
 config_dict = task.connect(config_dict)
 
 ##### data preparation -----
@@ -194,9 +194,9 @@ ax.xaxis.set_ticklabels(['AD', 'HC'])
 ax.yaxis.set_ticklabels(['AD', 'HC'])
 
 ##### save results -----
-save_path = config_dict.get('save_path')
-if save_path == None:
+save_dir = config_dict.get('save_dir')
+if save_dir == None:
     pass
 else:
-    torch.save(model.state_dict(), str(save_path/'model.pt'))
-    fig.savefig(str(save_path/'confusion_matrix.png'))
+    torch.save(model.state_dict(), str(save_dir/'model.pt'))
+    fig.savefig(str(save_dir/'confusion_matrix.png'))
