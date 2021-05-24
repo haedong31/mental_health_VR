@@ -36,16 +36,25 @@ train_test_ratio = 0.8
 
 # healthy control group
 con_meta = gen_meta_df(data_con_dir, eye_dir, rp_dir, group='control')
-con_meta_train, con_meta_test = train_test_split(con_meta, train_size=train_test_ratio, random_state=1)
+con_meta_train, con_meta_test = train_test_split(con_meta, train_size=train_test_ratio)
 
 # experimental group (dementia)
 exp_meta = gen_meta_df(data_exp_dir, eye_dir, rp_dir, group='dementia')
-exp_meta_train, exp_meta_test = train_test_split(exp_meta, train_size=train_test_ratio, random_state=1)
+exp_meta_train, exp_meta_test = train_test_split(exp_meta, train_size=train_test_ratio)
 
 # aggregate & shuffle
-meta_train = pd.concat([con_meta_train, exp_meta_train], ignore_index=True, sort=False).sample(frac=1)
-meta_test = pd.concat([con_meta_test, exp_meta_test], ignore_index=True, sort=False).sample(frac=1)
+meta_data = pd.concat([con_meta, exp_meta], ignore_index=True, sort=False)
+meta_data = meta_data.sample(frac=1)
+
+meta_train = pd.concat([con_meta_train, exp_meta_train], ignore_index=True, sort=False)
+meta_train = meta_train.sample(frac=1)
+
+meta_test = pd.concat([con_meta_test, exp_meta_test], ignore_index=True, sort=False)
+meta_test = meta_test.sample(frac=1)
 
 # save
+con_meta.to_csv('./data/meta_con.csv', index=False)
+exp_meta.to_csv('./data/meta_exp.csv', index=False)
+meta_data.to_csv('./data/meta_data.csv', index=False)
 meta_train.to_csv('./data/meta_train.csv', index=False)
 meta_test.to_csv('./data/meta_test.csv', index=False)

@@ -1,4 +1,4 @@
-from pathlib import Path
+from pathlib2 import Path
 
 import pandas as pd
 import numpy as np
@@ -9,6 +9,50 @@ import torchaudio
 import torchaudio.transforms as transforms
 
 from bert_vocab_check import BertVocabCheck
+
+##### check meta-data files -----
+data_con_dir = Path('./data/DementiaBank/Pitt/Control/cookie')
+data_exp_dir = Path('./data/DementiaBank/Pitt/Dementia/cookie')
+eye_dir = Path('./data/pseudo_eyetracking')
+rp_dir = Path('./data/audio')
+
+eye_trn = pd.read_csv(str(eye_dir/'train_meta.csv'))
+eye_trn['label'].value_counts()
+eye_trn['path'].head()
+
+rp_trn = pd.read_csv(str(rp_dir/'meta_train.csv'))
+rp_trn['label'].value_counts()
+rp_trn['path'].head()
+
+
+agg = pd.read_csv('./data/meta_train.csv')
+agg['label'].value_counts()
+agg.head()
+
+
+p1 = data_con_dir.glob('*')
+f1 = [x.stem for x in p1]
+
+p2 = (eye_dir/'control').glob('*.png')
+f2 = [x.stem for x in p2]
+
+p3 = (rp_dir/'control').glob('*.png')
+f3 = [x.stem for x in p3]
+
+def common_elts(a,b):
+    seta = set(a)
+    setb = set(b)
+    
+    intersec = (seta & setb)
+    
+    if intersec:
+        return intersec
+    else:
+        print('No common elements')
+
+u1 = common_elts(f1,f2)
+u2 = common_elts(f2,f3)
+
 
 ## words counts -----
 def sort_save_freq_vocab(freq_vocab, save_path):
