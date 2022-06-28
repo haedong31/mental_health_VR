@@ -1,14 +1,28 @@
-from pathlib2 import Path
+from pathlib import Path
+import pylangacq
 
 import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
+# import numpy as np
+# import matplotlib.pyplot as plt
 
-import torch
-import torchaudio
-import torchaudio.transforms as transforms
+# import torch
+# import torchaudio
+# import torchaudio.transforms as transforms
 
-from bert_vocab_check import BertVocabCheck
+# from bert_vocab_check import BertVocabCheck
+
+##### text data basic statistics -----
+hc = pylangacq.read_chat('./data/DementiaBank/Pitt/Control/cookie') # healthy control
+ad = pylangacq.read_chat('./data/DementiaBank/Pitt/Dementia/cookie') # Alzheimer's disease
+
+print(f'Number of participants (Control): {hc.n_files()}')
+print(f'Number of participants (Dementia): {ad.n_files()}')
+
+numu_hc = []
+numw_ad = []
+for n,f in enumerate(hc):
+    print(f"Participant {n+1}'s utterances {len(f.utterances(participants='PAR'))}")
+    print(f"Participant {n+1}'s words {len(f.words(participants='PAR'))}")
 
 ##### check meta-data files -----
 data_con_dir = Path('./data/DementiaBank/Pitt/Control/cookie')
@@ -54,7 +68,7 @@ u1 = common_elts(f1,f2)
 u2 = common_elts(f2,f3)
 
 
-## words counts -----
+##### words counts -----
 def sort_save_freq_vocab(freq_vocab, save_path):
     freq_vocab = dict(sorted(freq_vocab.items(), key=lambda x: x[1], reverse=True))
     k = list(freq_vocab.keys())
@@ -81,10 +95,7 @@ exp_freq_vocab = exp_vocab.freq_vocab
 con_freq_vocab = dict(sorted(con_freq_vocab.items(), key=lambda x: x[1], reverse=True))
 exp_freq_vocab = dict(sorted(exp_freq_vocab.items(), key=lambda x: x[1], reverse=True))
 
-## audio dataset -----
-
-
-
+##### audio dataset -----
 config_dict = {"num_epochs": 6, "batch_size": 8, "drop_out": 0.25,
     "base_lr": 0.005, "num_mel_filters": 2048, "resample_freq": 22050}
 
