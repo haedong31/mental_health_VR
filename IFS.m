@@ -1,4 +1,4 @@
-function [IFS_address] = IFS(cate_state,alpha)
+function [IFS_address] = IFS(cate_state,KK,alpha)
 
 %input:
 %cate_state - state series of categorical variables     
@@ -24,8 +24,6 @@ function [IFS_address] = IFS(cate_state,alpha)
 
 
 x_address(1) = 0; y_address(1)=  0;
-KK = max(cate_state);
-
 for i=1:length(cate_state)
     x_address(i+1) = alpha*x_address(i)+cos(cate_state(i)*2*pi/KK);
     y_address(i+1) = alpha*y_address(i)+sin(cate_state(i)*2*pi/KK);
