@@ -31,39 +31,24 @@ function [RR,ENT,Mean] = heterorecurrence(IFS_address,cate_state,Order,nbins)
         r = cerecurr_y(IFS_address(Index+1,:));
         rr = triu(r,1);
         dist = rr(:);
-        dist(find(dist==0)) = [];
-        count = hist(dist,nbins);
-        Mean = mean(dist);
-        
-        prob = count/sum(count);
-        nonz = prob (find (prob));
-        ENT = sum (nonz .* (-log2 (nonz)));
+        dist(dist==0) = [];
+
+        if isempty(dist)
+            Mean = 0;
+            ENT = 0;
+        else
+            if nbins==0
+                count = histcounts(dist,'BinMethod','auto');
+            else
+                count = histcounts(dist,nbins);
+            end
+            Mean = mean(dist);
+            prob = count/sum(count);
+            nonz = prob(prob~=0);
+            ENT = sum (nonz .* (-log2 (nonz)));
+        end
     else
         RR = 0; ENT = 0; Mean = 0;
-    end
-
-    if nargout == 0
-        figure('color','w')
-        cols = lines(max(cate_state));
-        data = cate_state;
-        for i=1:max(cate_state)
-            Index_i = find(data==i);
-            Ind = Index_i;
-            M_Ind = repmat(Ind,1,length(Ind));
-            x_Ind = M_Ind(:);
-            M_Ind_y = M_Ind';
-            y_Ind = M_Ind_y(:);
-            plot(x_Ind,y_Ind,'.','MarkerSize',2,'Color',cols(i,:));
-            hold on
-            clear Index_i Ind M_Ind x_Ind M_ind_y y_Ind
-        end
-        xlabel('Time Index','FontSize',10,'FontWeight','bold');
-        ylabel('Time Index','FontSize',10,'FontWeight','bold');
-        title('Heteogeneous Recurrence Plot','FontSize',10,'FontWeight','bold');
-        xlim([0 length(cate_state)])
-        ylim([0 length(cate_state)])
-        set(gca,'LineWidth',2,'FontSize',10,'FontWeight','bold');
-        
     end
 end
 
@@ -91,8 +76,7 @@ function buffer = cerecurr_y(signal)
     %t=sin(-pi:pi/100:10*pi);
     %cerecurr_y(t,2,1);
     
-    len = length(signal);
-    N = len;
+    N = size(signal,1);
     Y = signal;
     buffer=zeros(N);
     
@@ -110,23 +94,5 @@ function buffer = cerecurr_y(signal)
         end
     end
     %close(h);
-    
-    rmin=min(min(buffer));
-    rmax=max(max(buffer));
-    
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    if nargout == 0
-        figure('Position',[100 100 550 400]);
-        imagesc(buffer);
-        colormap Jet;
-        colorbar;
-        axis image;    
-        xlabel('Time Index','FontSize',10,'FontWeight','bold');
-        ylabel('Time Index','FontSize',10,'FontWeight','bold');
-        title('Recurrence Plot','FontSize',10,'FontWeight','bold');
-        get(gcf,'CurrentAxes');
-        set(gca,'YDir','normal')
-        set(gca,'LineWidth',2,'FontSize',10,'FontWeight','bold');
-    end
 end
     
