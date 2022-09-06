@@ -1,54 +1,37 @@
-function [RR,ENT,Mean,num_rgroup] = heterorecurrence(IFS_address,cate_state,Order)
-    % input:
-    % IFS_address - 2D coordinate of IFS
-    % cate_state - corresponding state series of categorical variables
-    % Order - particular categorical variable
-    % nbins - number of bins to compute the ENT
-
-    % output:
-    % RR - heterogeneous recurrence rate
-    % ENT - heterogeneous ENT
-    % Mean - heterogeneous Mean
-
-    %Author: Hui Yang
-    %Affiliation: 
-        %The Pennsylvania State University
-        %310 Leohard Building, University Park, PA
-        %Email: yanghui@gmail.com
-        
-    % If you find this toolbox useful, please cite the following paper:
-    % [1]	H. Yang and Y. Chen, �Heterogeneous recurrence monitoring and control 
-    % of nonlinear stochastic processes,� Chaos, Vol. 24, No. 1, p013138, 2014, 
-    % DOI: 10.1063/1.4869306
-    % [2]	Y. Chen and H. Yang, �Heterogeneous recurrence representation and quantification
-    % of dynamic transitions in continuous nonlinear processes,� European Physical Journal B, 
-    % Vol. 89, No. 6, p1-11, 2016, DOI: 10.1140/epjb/e2016-60850-y
-
+function feat_vec = heterorecurrence(ifs_address,cate_state,num_id)
+    rr = NaN(1,num_id);
+    rent = NaN(1,num_id);
+    rmean = NaN(1,num_id);
     num_rgroup = 0;
-    Index = find(cate_state==Order);
-    if ~isempty(Index)
-        num_rgroup = num_rgroup+1;
-        RR = power(length(Index),2)/power(length(cate_state),2);
-        r = cerecurr_y(IFS_address(Index+1,:));
-        rr = triu(r,1);
-        dist = rr(:);
-        dist(dist==0) = [];
 
-        if isempty(dist)
-            Mean = 0;
-            ENT = 0;
-        else
-            count = histcounts(dist,'BinMethod','auto');
-            prob = count/sum(count);
-            nonz = prob(prob~=0);
-            ENT = sum (nonz .* (-log2 (nonz)));
-            Mean = mean(dist);
+    for i=1:num_id
+        Index = find(cate_state==i);
+        if isempty(Index)
+            rr(i) = 0; 
+            rent(i) = 0; 
+            rmean(i) = 0;
+            continue
         end
-    else
-        RR = 0; 
-        ENT = 0; 
-        Mean = 0;
+
+        num_rgroup = num_rgroup + 1;
+        rr(i) = power(length(Index),2)/power(length(cate_state),2);
+        
+        rmx = cerecurr_y(ifs_address(Index+1,:));
+        trir = triu(rmx,1);
+        flatr = trir(:);
+        flatr(flatr==0) = [];
+        if isempty(flatr)
+            rent(i) = 0;
+            rmean(i) = 0;
+            continue
+        end
+        count = histcounts(flatr,'BinMethod','auto');
+        prob = count/sum(count);
+        nonz = prob(prob~=0);
+        rent(i) = sum (nonz .* (-log2 (nonz)));
+        rmean(i) = mean(flatr);
     end
+    feat_vec = [rr,rent,rmean,num_rgroup];
 end
 
 function buffer = cerecurr_y(signal)
