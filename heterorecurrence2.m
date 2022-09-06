@@ -1,6 +1,8 @@
-function [RR,ENT,Mean] = heterorecurrence2(IFS_address,cate_state,o1,o2)
+function [RR,ENT,Mean,num_rgroup] = heterorecurrence2(IFS_address,cate_state,o1,o2)
+    num_rgroup = 0;
     idx1 = find(cate_state == o1);
     if ~isempty(idx1)
+        num_rgroup = num_rgroup+1;
         idx2 = find(cate_state(idx1) == o2);
     
         RR = power(length(idx2),2)/power(length(cate_state),2);
@@ -19,7 +21,9 @@ function [RR,ENT,Mean] = heterorecurrence2(IFS_address,cate_state,o1,o2)
             ENT = sum (nonz .* (-log2 (nonz)));
         end
     else
-        RR = 0; ENT = 0; Mean = 0;
+        RR = 0; 
+        ENT = 0; 
+        Mean = 0;
     end
 end
 

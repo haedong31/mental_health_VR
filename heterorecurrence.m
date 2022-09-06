@@ -1,4 +1,4 @@
-function [RR,ENT,Mean] = heterorecurrence(IFS_address,cate_state,Order,nbins)
+function [RR,ENT,Mean,num_rgroup] = heterorecurrence(IFS_address,cate_state,Order)
     % input:
     % IFS_address - 2D coordinate of IFS
     % cate_state - corresponding state series of categorical variables
@@ -24,10 +24,11 @@ function [RR,ENT,Mean] = heterorecurrence(IFS_address,cate_state,Order,nbins)
     % of dynamic transitions in continuous nonlinear processes,� European Physical Journal B, 
     % Vol. 89, No. 6, p1-11, 2016, DOI: 10.1140/epjb/e2016-60850-y
 
+    num_rgroup = 0;
     Index = find(cate_state==Order);
     if ~isempty(Index)
+        num_rgroup = num_rgroup+1;
         RR = power(length(Index),2)/power(length(cate_state),2);
-        
         r = cerecurr_y(IFS_address(Index+1,:));
         rr = triu(r,1);
         dist = rr(:);
@@ -37,18 +38,16 @@ function [RR,ENT,Mean] = heterorecurrence(IFS_address,cate_state,Order,nbins)
             Mean = 0;
             ENT = 0;
         else
-            if nbins==0
-                count = histcounts(dist,'BinMethod','auto');
-            else
-                count = histcounts(dist,nbins);
-            end
-            Mean = mean(dist);
+            count = histcounts(dist,'BinMethod','auto');
             prob = count/sum(count);
             nonz = prob(prob~=0);
             ENT = sum (nonz .* (-log2 (nonz)));
+            Mean = mean(dist);
         end
     else
-        RR = 0; ENT = 0; Mean = 0;
+        RR = 0; 
+        ENT = 0; 
+        Mean = 0;
     end
 end
 
