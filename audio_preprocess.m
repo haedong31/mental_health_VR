@@ -6,6 +6,8 @@ data_dir = dir('./data/audio/dementia_wav/*.wav');
 save_dir = "./data/audio/dementia_embd3";
 num_files = length(data_dir);
 
+downsample_factor = 1000;
+
 % hyperparameters for searching tau
 tau = zeros(num_files,1);
 max_tau = 20;
@@ -18,10 +20,11 @@ for i=1:num_files
     
     % average out left and right channels
     y = mean(y,2);
+    y_sampled = downsample(y,downsample_factor);
 
     mi = zeros(max_tau,1);
     for j=1:max_tau
-        mi(j) = mutual_info(y,j,nbins);
+        mi(j) = mutual_info(y_sampled,j,nbins);
     end
 
     if any(isnan(mi))
@@ -35,7 +38,7 @@ for i=1:num_files
         tau(i) = knee_tau;
     end
 
-    [embd_y,~] = time_delay_embed(y,tau(i),3);
+    [embd_y,~] = time_delay_embed(y_sampled,tau(i),3);
     embd_y = array2table(embd_y,'VariableNames',{'dim1','dim2','dim3'});
 
     [~,fname_stem,~] = fileparts(data_dir(i).name);
