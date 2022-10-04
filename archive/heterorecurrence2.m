@@ -2,7 +2,7 @@ function feat_vec = heterorecurrence2(IFS_address,cate_state,num_id)
     rr = NaN(num_id,num_id);
     rent = NaN(num_id,num_id);
     rmean = NaN(num_id,num_id);
-   
+    num_rgroup = zeros(1,num_id);
     for i=1:num_id
         idx1 = find(cate_state == i);
         if isempty(idx1)
@@ -14,6 +14,7 @@ function feat_vec = heterorecurrence2(IFS_address,cate_state,num_id)
 
         for j=1:num_id
             idx2 = find(cate_state(idx1) == j);
+            num_rgroup(i) = num_rgroup(i)+1;
             rr(i,j) = power(length(idx2),2)/power(length(cate_state),2);
             
             rmx = cerecurr_y(IFS_address(idx2+1,:));
@@ -32,7 +33,7 @@ function feat_vec = heterorecurrence2(IFS_address,cate_state,num_id)
             rmean(i,j) = mean(flatr);
         end
     end
-    feat_vec = [reshape(rr,1,[]), reshape(rent,1,[]), reshape(rmean,1,[])];
+    feat_vec = [reshape(rr,1,[]), reshape(rent,1,[]), reshape(rmean,1,[]), num_rgroup];
 end
 
 function buffer = cerecurr_y(signal)
