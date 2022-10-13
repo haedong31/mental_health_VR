@@ -25,25 +25,83 @@ n2 = length(fnames2);
 num_id = 8;
 alpha = 0.25;
 
-for i=1:n1
-    fpath = fullfile(data_dir1, fnames1(i));
+% for i=1:n1
+%     fpath = fullfile(data_dir1, fnames1(i));
+%     y = table2array(readtable(fpath));
+%     
+%     ot = OcTree(y,'binCapacity',n1/3,'maxDepth',2,'style','weighted');
+%     int_sig = OcTree_state(ot,y,n1);
+%     ifs_coord = IFS(int_sig,num_id,alpha);    
+%     ifs_coord(1,:) = [];
+%     [~,fname_stem,~] = fileparts(fnames1(i));
+% 
+% 
+%     figure('Color','w','Position',[100,100,430,400])
+%     plot(ifs_coord(:,1),ifs_coord(:,2),'.','Color','black')
+%     axis tight
+%     axis off    
+%         
+%     ax = gca;
+%     exportgraphics(ax,...
+%         fullfile(save_dir1,strcat(fname_stem,".png")),...
+%         'Resolution',300)
+%     close
+% 
+%     for j=1:num_id
+%         idx1 = find(int_sig==j);
+%         ifs_coord1 = ifs_coord(idx1,:);
+%         
+%         figure('Color','w','Position',[100,100,430,400])
+%         plot(ifs_coord1(:,1),ifs_coord1(:,2),'.','Color','black')
+%         axis tight
+%         axis off
+%         
+%         ax = gca;
+%         exportgraphics(ax,...
+%             fullfile(save_dir1,strcat(fname_stem,"_",num2str(j),".png")),...
+%             'Resolution',300)
+%         close
+% 
+%         for k=1:num_id
+%             if ismember(1,idx1)
+%                 idx1(idx1==1) = [];
+%             end
+% 
+%             idx2 = find(int_sig(idx1-1)==k);
+%             ifs_coord2 = ifs_coord(idx2,:);
+% 
+%             figure('Color','w','Position',[100,100,430,400])
+%             plot(ifs_coord2(:,1),ifs_coord2(:,2),'.','Color','black')
+%             axis tight
+%             axis off
+%             
+%             ax = gca;
+%             exportgraphics(ax,...
+%                 fullfile(save_dir1,strcat(fname_stem,"_",num2str(j),num2str(k),".png")),...
+%                 'Resolution',300)
+%             close
+%         end
+%     end
+% end
+
+for i=1:n2
+    fpath = fullfile(data_dir2, fnames2(i));
     y = table2array(readtable(fpath));
     
-    ot = OcTree(y,'binCapacity',n1/3,'maxDepth',2,'style','weighted');
-    int_sig = OcTree_state(ot,y,n1);
-    ifs_coord = IFS(int_sig,num_id,alpha);    
+    ot = OcTree(y,'binCapacity',n2/3,'maxDepth',2,'style','weighted');
+    int_sig = OcTree_state(ot,y,n2);
+    ifs_coord = IFS(int_sig,num_id,alpha);
     ifs_coord(1,:) = [];
-    [~,fname_stem,~] = fileparts(fnames1(i));
-
+    [~,fname_stem,~] = fileparts(fnames2(i));
 
     figure('Color','w','Position',[100,100,430,400])
     plot(ifs_coord(:,1),ifs_coord(:,2),'.','Color','black')
     axis tight
-    axis off    
-        
+    axis off  
+    
     ax = gca;
     exportgraphics(ax,...
-        fullfile(save_dir1,strcat(fname_stem,".png")),...
+        fullfile(save_dir2,strcat(fname_stem,".png")),...
         'Resolution',300)
     close
 
@@ -58,7 +116,7 @@ for i=1:n1
         
         ax = gca;
         exportgraphics(ax,...
-            fullfile(save_dir1,strcat(fname_stem,"_",num2str(j),".png")),...
+            fullfile(save_dir2,strcat(fname_stem,"_",num2str(j),".png")),...
             'Resolution',300)
         close
 
@@ -77,37 +135,10 @@ for i=1:n1
             
             ax = gca;
             exportgraphics(ax,...
-                fullfile(save_dir1,strcat(fname_stem,"_",num2str(j),num2str(k),".png")),...
+                fullfile(save_dir2,strcat(fname_stem,"_",num2str(j),num2str(k),".png")),...
                 'Resolution',300)
             close
         end
-    end
-end
-
-for i=1:n2
-    fpath = fullfile(data_dir2, fnames2(i));
-    y = table2array(readtable(fpath));
-    
-    ot = OcTree(y,'binCapacity',n2/3,'maxDepth',2,'style','weighted');
-    int_sig = OcTree_state(ot,y,n2);    
-    ifs_coord = IFS(int_sig,num_id,alpha);
-    ifs_coord(1,:) = [];
-
-    for j=1:num_id
-        idx1 = find(int_sig==j);
-        ifs_coord1 = ifs_coord(idx1,:);
-
-        figure('Color','w','Position',[100,100,430,400])
-        plot(ifs_coord1(:,1),ifs_coord1(:,2),'.','Color','black')
-        axis tight
-        axis off
-        
-        ax = gca;
-        [~,fname_stem,~] = fileparts(fnames2(i));
-        exportgraphics(ax,...
-            fullfile(save_dir2,strcat(fname_stem,"_",num2str(j),".png")),...
-            'Resolution',300)
-        close
     end
 end
 
