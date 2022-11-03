@@ -11,7 +11,6 @@ import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
-import torchvision
 import torchvision.transforms as transforms
 import torchvision.models as models
 
@@ -19,15 +18,14 @@ from clearml import Task
 
 task = Task.init(project_name='VR Mental Health Clinic',
                  task_name='Audio IFS Plots - Pretrained ResNet')
-config_dict = {'num_of_epochs': 10, 'batch_size': 4, 'drop_out': 0.25, 'lr': 5e-5,
+config_dict = {'num_of_epochs': 10, 'batch_size': 4, 'drop_out': 0.25, 'lr': 1e-5,
                'save_dir': Path('./results')}
 config_dict = task.connect(config_dict)
-print(config_dict)
-
+# print(config_dict)
 data_dir = Path('./data/audio/ifs')
 
-class AudioIFSDataSet(Dataset):
-    def __init__(self,meta_df_path,data_dir,h,w):
+class AudioIFSTrainDataSet(Dataset):
+    def __init__(self,meta_df_path,data_dir,h,w,num_id):
         self.paths = []
         self.labels = []
         self.transform = transforms.Compose(
@@ -36,7 +34,6 @@ class AudioIFSDataSet(Dataset):
              transforms.Normalize((0.5,0.5,0.5),(0.5,0.5,0.5))])
         
         meta_df = pd.read_csv(meta_df_path)
-        num_id = 8
         for _, row in meta_df.iterrows():
             f = row['file']
             l = row['label']
@@ -44,7 +41,7 @@ class AudioIFSDataSet(Dataset):
             self.labels.append(l)
             
             for i in range(num_id):
-                self.paths.append(data_dir/(f+'_'+str(i+1)+'.png'))
+                self.paths.append(data_dir/(f+'_'+str(i+1)+'.png'))                
                 self.labels.append(l)
                 
                 for j in range(num_id):
@@ -60,13 +57,40 @@ class AudioIFSDataSet(Dataset):
         ifs_img = self.transform(ifs_img)
         
         return ifs_img, self.labels[idx]
+
+class AudioIFSEvalDataSet(Dataset):
+    def __init__(self,meta_df_path,data_dir,h,w):
+        self.paths = []
+        self.labels = []
+        self.transform = transforms.Compose(
+            [transforms.Resize((h,w)),
+             transforms.ToTensor(),
+             transforms.Normalize((0.5,0.5,0.5),(0.5,0.5,0.5))])
+        
+        meta_df = pd.read_csv(meta_df_path)
+        for _, row in meta_df.iterrows():
+            f = row['file']
+            l = row['label']
+            self.paths.append(data_dir/(f+'.png'))
+            self.labels.append(l)
     
+    def __len__(self):
+        return len(self.paths)
+    
+    def __getitem__(self,idx):
+        ifs_img = Image.open(self.paths[idx])
+        ifs_img = ifs_img.convert('RGB')
+        ifs_img = self.transform(ifs_img)
+        
+        return ifs_img, self.labels[idx]
+        
 # data sets
 h = 1200
 w = 1260
-train_ds = AudioIFSDataSet('data/audio/meta_train.csv', data_dir, h, w) 
-valid_ds = AudioIFSDataSet('data/audio/meta_valid.csv', data_dir, h, w)
-test_ds = AudioIFSDataSet('data/audio/meta_test.csv', data_dir, h, w)
+num_id = 8
+train_ds = AudioIFSTrainDataSet('data/audio/meta_train.csv',data_dir,h,w,num_id)
+valid_ds = AudioIFSEvalDataSet('data/audio/meta_valid.csv',data_dir,h,w)
+test_ds = AudioIFSEvalDataSet('data/audio/meta_test.csv',data_dir,h,w)
 
 # data loaders
 train_dl = DataLoader(train_ds, batch_size=config_dict.get('batch_size'))
@@ -75,14 +99,13 @@ test_dl = DataLoader(test_ds, batch_size=config_dict.get('batch_size'))
 
 # pretrained ResNet
 model = models.resnet18(weights=models.ResNet18_Weights.DEFAULT) # try from the empty model? put this option in the configuratin dictionary?
-model.fc = nn.Sequential(nn.Dropout(p=config_dict.get('drop_out')),
-                         nn.Linear(512,1),
-                         nn.Sigmoid())
+num_ftrs = model.fc.in_features
+model.fc = nn.Linear(num_ftrs,2)
 
 # optimizer
+criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr=config_dict.get('lr'))
 scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=config_dict.get('num_of_epochs')//4, gamma=0.5)
-criterion = nn.BCELoss()
 
 # device (GPU) setting
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
